@@ -1,12 +1,15 @@
-import time
-
 import pygame
 
 from players import Helena
 
-width, height = 1200, 860
+
+width, height = 1366, 600
 BLACK = 0, 0, 0
 WHITE = 255, 255, 255
+HEALTH_COLOR = 217, 28, 44
+YELLOW_COLOR = 255, 210, 28
+MANA_COLOR = '#4d30bf'
+MANA_BG = '#248539'
 
 pygame.init()
 
@@ -16,6 +19,7 @@ class Game:
         self.helena = None
         self.font_big = None
         self.font_small = None
+        self.font_smallest = None
         self.show_text = True
         self.game_loop = True
         self.game_intro_loop = True
@@ -35,6 +39,7 @@ class Game:
     def load_fonts(self):
         self.font_small = pygame.font.SysFont('calibri', 25)
         self.font_big = pygame.font.Font('assets/fonts/turok.ttf', 75)
+        self.font_smallest = pygame.font.Font('assets/fonts/turok.ttf', 20)
 
     def load_sounds(self):
         pass
@@ -65,12 +70,31 @@ class Game:
                 self.game_loop = False
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN and self.game_intro_loop:
-                    # print("Tecla Enter pressionada!")
                     self.game_intro_loop = False
+
+    def show_health_bar(self, health, x, y):
+        ratio = health / 100
+        pygame.draw.rect(self.screen, WHITE, (x - 2, y - 2, 202, 17))
+        pygame.draw.rect(self.screen, HEALTH_COLOR, (x, y, 200, 15))
+        pygame.draw.rect(self.screen, YELLOW_COLOR, (x, y, 200 * ratio, 15))
+        text2 = self.font_smallest.render("HP", True, BLACK)
+        self.screen.blit(text2, ((x // 2) - 6, y-4))
+
+    def show_mana_bar(self, mana, x, y):
+        ratio = mana / 100
+        pygame.draw.rect(self.screen, WHITE, (x - 2, y - 2, 202, 17))
+        pygame.draw.rect(self.screen, MANA_BG, (x, y, 200, 15))
+        pygame.draw.rect(self.screen, MANA_COLOR, (x, y, 200 * ratio, 15))
+        font_smallest = pygame.font.Font('assets/fonts/turok.ttf', 18)
+        text2 = font_smallest.render("MP", True, BLACK)
+        self.screen.blit(text2, ((x // 2) - 6, y-4))
 
     def update(self):
         self.screen.fill((255, 255, 255))
-        self.screen.blit(self.helena.image, [25, (self.height // 2) + 90])
+        self.show_health_bar(self.helena.health, 28, 20)
+        self.show_mana_bar(self.helena.health, 28, 40)
+        self.helena.update(self.screen)
+        self.helena.draw(self.screen)
 
     def show_intro(self):
         self.screen.fill((255, 255, 255))
@@ -93,7 +117,7 @@ class Game:
                 self.handle_events()
                 self.update()
             pygame.display.update()
-            self.clock.tick(60)
+            self.clock.tick(30)
 
         pygame.quit()
 

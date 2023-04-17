@@ -2,19 +2,36 @@ import pygame
 
 from players import Helena
 
-
-width, height = 1366, 600
+width, height = 1366, 800
 BLACK = 0, 0, 0
 WHITE = 255, 255, 255
 HEALTH_COLOR = 217, 28, 44
 YELLOW_COLOR = 255, 210, 28
 MANA_COLOR = '#4d30bf'
 MANA_BG = '#248539'
+DIALOG_AREA = '#D46C22'
 
 pygame.init()
 
+time_interval = 1500  # 500 milliseconds == 0.1 seconds
+timer_event = pygame.USEREVENT + 1
+pygame.time.set_timer(timer_event, time_interval)
+
+
+def text_drop_shadow(font, text, color, dx, dy, shadow_color=(127, 127, 127), alpha=127):
+    text_size = font.size(text)
+    surf = pygame.Surface(
+        (text_size[0] + abs(dx), text_size[1] + abs(dy)), pygame.SRCALPHA)
+    shadow_surf = font.render(text, True, shadow_color)
+    shadow_surf.set_alpha(alpha)
+    text_surf = font.render(text, True, color)
+    surf.blit(shadow_surf, (max(0, dx), max(0, dy)))
+    surf.blit(text_surf, (max(0, -dx), max(0, -dy)))
+    return surf
 
 class Game:
+    show_dialog = False
+
     def __init__(self, ):
         self.helena = None
         self.font_big = None
@@ -34,7 +51,6 @@ class Game:
         self.cog_button = self.load_images()['cog']
         self.all_sprites = pygame.sprite.Group()
         self.helena = Helena(self.player_img)
-        # self.all_sprites.add(self.helena)
 
     def load_fonts(self):
         self.font_small = pygame.font.SysFont('calibri', 25)
@@ -71,6 +87,10 @@ class Game:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN and self.game_intro_loop:
                     self.game_intro_loop = False
+            if event.type == timer_event and self.helena.health > 0:
+                self.helena.mana += 1
+                if self.helena.mana >= 100:
+                    self.helena.mana = 100
 
     def show_health_bar(self, health, x, y):
         ratio = health / 100
@@ -78,7 +98,7 @@ class Game:
         pygame.draw.rect(self.screen, HEALTH_COLOR, (x, y, 200, 15))
         pygame.draw.rect(self.screen, YELLOW_COLOR, (x, y, 200 * ratio, 15))
         text2 = self.font_smallest.render("HP", True, BLACK)
-        self.screen.blit(text2, ((x // 2) - 6, y-4))
+        self.screen.blit(text2, ((x // 2) - 6, y - 4))
 
     def show_mana_bar(self, mana, x, y):
         ratio = mana / 100
@@ -87,18 +107,32 @@ class Game:
         pygame.draw.rect(self.screen, MANA_COLOR, (x, y, 200 * ratio, 15))
         font_smallest = pygame.font.Font('assets/fonts/turok.ttf', 18)
         text2 = font_smallest.render("MP", True, BLACK)
-        self.screen.blit(text2, ((x // 2) - 6, y-4))
+        self.screen.blit(text2, ((x // 2) - 6, y - 4))
+
+    def show_dialog_bar(self, x, y, speaker, msg=None):
+        if Game.show_dialog:
+            pygame.draw.rect(self.screen, WHITE, (x - 2, y - 2, 1302, 217))
+            pygame.draw.rect(self.screen, DIALOG_AREA, (x, y, 1300, 220))
+
+            speaker_img = pygame.surface.Surface([100, 100])
+            font_smallest = pygame.font.Font('assets/fonts/turok.ttf', 18)
+            text2 = font_smallest.render(self.helena.name, True, BLACK)
+            self.screen.blit(text2, (x - 6, y - 4))
+            self.screen.blit(speaker_img, (x + 10, y + 15))
 
     def update(self):
         self.screen.fill((255, 255, 255))
         self.show_health_bar(self.helena.health, 28, 20)
-        self.show_mana_bar(self.helena.health, 28, 40)
+        self.show_mana_bar(self.helena.mana, 28, 40)
+        self.show_dialog_bar(30, 620, self.helena)
         self.helena.update(self.screen)
         self.helena.draw(self.screen)
 
     def show_intro(self):
         self.screen.fill((255, 255, 255))
-        text = self.font_big.render("Helena's Quest", True, (0, 0, 0))
+        # text = self.font_big.render("Helena's Quest", True, (0, 0, 0))
+        text = text_drop_shadow(
+            self.font_big, "Helena's Quest", (0, 0, 0), -15, 10)
         self.font_small.set_underline(True)
         text2 = self.font_small.render("Press Enter", True, BLACK)
         self.screen.blit(text, (self.width // 2, self.height // 2))

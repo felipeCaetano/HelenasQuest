@@ -16,24 +16,27 @@ class Helena(pygame.sprite.Sprite):
 
     def __init__(self, sprites):
         super(Helena, self).__init__()
-        self.hit = False
-        self.update_time = pygame.time.get_ticks()
-        self.offset = 30, 25
-        self.flip = False
+        self.action = 'idle'
         self.alive = True
+        self.attack_cooldown = 20
         self.attack_type = None
-        self.jump = False
-        self.vel_y = 0
         self.attacking = False
+        self.fall = False
+        self.flip = False
+        self.hit = False
+        self.jump = False
         self.running = None
         self.size = None
-        self.health = 100
-        self.mana = 0
-        self.sprites = sprites
-        self.image_scale = 2
-        self.name = "Helena"
-        self.images = self.load_images(self.sprites)
+        self.health = 10
         self.frame_index = 0
+        self.image_scale = 2
+        self.mana = 10
+        self.name = "Helena"
+        self.offset = 30, 25
+        self.vel_y = 0
+        self.update_time = pygame.time.get_ticks()
+        self.sprites = sprites
+        self.images = self.load_images(self.sprites)
         self.image = self.images['idle'][
             self.frame_index]  # pygame.Surface((50, 50))
         self.rect = pygame.Rect(10, 420, 116, 90)
@@ -43,30 +46,55 @@ class Helena(pygame.sprite.Sprite):
         action = 'idle'
         if self.running:
             action = 'run'
+            # self.update_animation(action)
         elif self.jump:
-            pass
+            action = 'jump'
+            # self.update_animation(action)
         elif self.attacking:
-            pass
+            if self.attack_type == 1:
+                action = 'attack1'
+            elif self.attack_type == 2:
+                action = 'attack2'
         elif self.hit:
             pass
         elif not self.alive:
-            pass
+            action = 'death'
+        elif self.fall:
+            action = 'fall'
         else:
             action = 'idle'
+        self.update_animation(action)
         self.image = self.images[action][self.frame_index]
         if pygame.time.get_ticks() - self.update_time > animation_cooldown:
-            self.frame_index += 1
             self.update_time = pygame.time.get_ticks()
+            self.frame_index += 1
         if self.frame_index >= len(self.images[action]):
+            # self.frame_index = 0
+            if not self.alive:
+                self.frame_index = len(self.images[action]) - 1
+            else:
+                self.frame_index = 0
+                if self.action == 'attack1' or self.action == 'attack2':
+                    self.attacking = False
+                    self.attack_cooldown = 20
+
+    def update_animation(self, new_action):
+        if new_action != self.action:
+            self.action = new_action
             self.frame_index = 0
+            self.update_time = pygame.time.get_ticks()
 
     def update(self, *args: Any, **kwargs: Any) -> None:
         super().update(*args, **kwargs)
         self.handle_player(args[0])
+        if self.health <= 0:
+            self.health = 0
+            self.alive = False
         self.animate()
 
     def load_images(self, sprites):
         animation_dict = {}
+        action = None
         for x, animation_step in enumerate(self.animation_steps):
             animation_list = []
             for w_pointer in range(animation_step):
@@ -87,47 +115,81 @@ class Helena(pygame.sprite.Sprite):
         dx = 0
         dy = 0
         key = pygame.key.get_pressed()
+        self.running = False
+
         if not self.attacking and self.alive:
-            if key[pygame.K_a]:
-                dx = -SPEED
-                self.running = True
-                self.flip = True
-            if key[pygame.K_d]:
-                dx = SPEED
-                self.running = True
-                self.flip = False
-            if key[pygame.K_w] and not self.jump:
-                self.vel_y = -25
-                self.jump = True
-            if key[pygame.K_r] or key[pygame.K_t]:
-                if key[pygame.K_r]:
+            if self.jump:
+                if key[pygame.K_a]:
+                    dx = -SPEED
+                    self.running = False
+                    self.flip = True
+                if key[pygame.K_d]:
+                    dx = SPEED
+                    self.running = False
+                    self.flip = False
+                if not key[pygame.K_w]:
+                    self.fall = True
+                    self.vel_y = 0
+                    self.jump = False
+                if key[pygame.K_r] or key[pygame.K_t]:
+                    if key[pygame.K_r]:
+                        self.attacking = True
+                        self.attack_type = 1
+                    else:
+                        self.attacking = True
+                        self.attack_type = 2
+                    self.attack(surface)
+
+            else:
+                if key[pygame.K_a]:
+                    dx = -SPEED
+                    self.running = True
+                    self.flip = True
+                if key[pygame.K_d]:
+                    dx = SPEED
+                    self.running = True
+                    self.flip = False
+                if key[pygame.K_w] and not self.jump:
+                    self.vel_y = -25
+                    self.jump = True
+                    self.fall = False
+                if key[pygame.K_r] or key[pygame.K_t]:
                     self.attacking = True
-                    self.attack_type = 1
-                else:
-                    self.attacking = True
-                    self.attack_type = 2
-                self.attack(surface)
-                self.attacking = False
-            # else:
-            #     self.running = False
-            #     self.jump = False
-            #     self.attacking = False
+                    if key[pygame.K_r]:
+                        self.attack_type = 1
+                    else:
+                        self.attack_type = 2
+                    self.attack(surface)
 
         self.vel_y += GRAVITY
         dy += self.vel_y
         if self.rect.bottom + dy > SCREEN_HEIGHT - 220:
             self.vel_y = 0
             self.jump = False
+            self.fall = False
             dy = SCREEN_HEIGHT - 220 - self.rect.bottom
+
+        if self.attack_cooldown > 0:
+            self.attack_cooldown -= 1
+
+        if self.mana >= 100:
+            self.mana = 100
+        if self.health <= 0:
+            self.mana = 0
+
         self.rect.x += dx
         self.rect.y += dy
 
     def attack(self, surface, action=None, target=None):
         if self.attacking:
-            if self.attack_type == 1:
-                self.image = self.select_image('attack1', 0)
+            if self.mana > 0:
+                self.mana -= 5 # or Skill Mana Cost
             else:
-                self.image = self.select_image('attack2', 0)
+                self.attacking = False
+        #     if self.attack_type == 1:
+        #         self.image = self.select_image('attack1', 0)
+        #     else:
+        #         self.image = self.select_image('attack2', 0)
 
     def draw(self, surface):
         img = pygame.transform.flip(self.image, self.flip, False)

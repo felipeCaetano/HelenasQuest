@@ -32,7 +32,7 @@ class Helena(pygame.sprite.Sprite):
         self.image_scale = 2
         self.mana = 10
         self.name = "Helena"
-        self.offset = 30, 25
+        self.offset = 80, 55
         self.vel_y = 0
         self.update_time = pygame.time.get_ticks()
         self.sprites = sprites
@@ -40,7 +40,7 @@ class Helena(pygame.sprite.Sprite):
         self.image = self.images['idle'][
             self.frame_index]  # pygame.Surface((50, 50))
         self.rect = pygame.Rect(10, 420, 116, 90)
-        self.rect.x, self.rect.y = 10, 420
+        self.rect.x, self.rect.y = 0, 500
 
     def animate(self, animation_cooldown=50):
         action = 'idle'
@@ -103,6 +103,10 @@ class Helena(pygame.sprite.Sprite):
                 step_width = (width // animation_step)
                 cut_img = img.subsurface(w_pointer * step_width, 0, step_width,
                                          190)
+                dest_img = pygame.Surface((cut_img.get_width() * 2, cut_img.get_height() * 2)).convert_alpha()
+                cut_img = pygame.transform.scale2x(
+                    cut_img, dest_img
+                )
                 animation_list.append(cut_img)
             animation_dict[action] = animation_list
         return animation_dict
@@ -163,11 +167,11 @@ class Helena(pygame.sprite.Sprite):
 
         self.vel_y += GRAVITY
         dy += self.vel_y
-        if self.rect.bottom + dy > SCREEN_HEIGHT - 220:
+        if self.rect.bottom + dy > SCREEN_HEIGHT - 100:
             self.vel_y = 0
             self.jump = False
             self.fall = False
-            dy = SCREEN_HEIGHT - 220 - self.rect.bottom
+            dy = SCREEN_HEIGHT - 100 - self.rect.bottom
 
         if self.attack_cooldown > 0:
             self.attack_cooldown -= 1
@@ -193,6 +197,6 @@ class Helena(pygame.sprite.Sprite):
 
     def draw(self, surface):
         img = pygame.transform.flip(self.image, self.flip, False)
-        pygame.draw.rect(surface, (255, 0, 0), self.rect)
+        # pygame.draw.rect(surface, (255, 0, 0), self.rect)
         surface.blit(img, (self.rect.x - self.offset[0] * self.image_scale,
                            self.rect.y - self.offset[1] * self.image_scale))

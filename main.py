@@ -40,6 +40,7 @@ class Game:
     screen = pygame.display.set_mode((width, height))
 
     def __init__(self):
+        self.scene_running = False
         self.scene = None
         self.helena = None
         self.font_big = None
@@ -170,8 +171,13 @@ class Game:
             else:
                 self.create_chapter(self.chapter)
                 self.handle_events()
-                # self.update()
-                self.scene.run()
+                if not self.scene_running:
+                    # self.update()
+                    self.scene_running = True
+                    self.scene.run()
+                else:
+                    pass
+
             pygame.display.update()
             self.clock.tick(30)
 
@@ -250,16 +256,21 @@ class Chapter_1:
 
     def run(self):
         print("fui chamado")
-        # while self.running:
-        self.update()
-        self.handle_events()
-        self.show_dialog_bar(130, height - 80, self.helena,
-                             "O que houve aqui?")
-        self.handle_events()
-        self.show_dialog_bar(self.npc.rect.x, height - 80, self.npc,
-                             "Princesa! O alto magistrado requer sua presença")
-        pygame.display.update()
-        self.clock.tick(30)
+        while self.running:
+            self.update()
+            self.handle_events()
+            self.show_dialog_bar(130, height - 80, self.helena,
+                                 "O que houve aqui?")
+            self.show_dialog_bar(self.npc.rect.x, height - 80, self.npc,
+                                 "Princesa! O alto magistrado requer sua presença")
+            self.show_dialog_bar(130, height - 80, self.helena,
+                                 "O que Zanath quer agora?")
+            self.show_dialog_bar(130, height - 80, self.helena,
+                                 "Ta o caos aqui")
+            self.show_dialog_bar(self.npc.rect.x, height - 80, self.npc,
+                                 "Siga-me e Ele explicara tudo")
+            pygame.display.update()
+            self.clock.tick(30)
 
     def update(self):
         self.screen.fill((255, 255, 255))
@@ -281,9 +292,7 @@ class Chapter_1:
                 self.running = False
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN or event.key == pygame.K_r or event.key == pygame.K_t:
-                    print("scene events")
                     self.show_dialog = not self.show_dialog
-                    print(self.show_dialog)
                     return True
 
 
